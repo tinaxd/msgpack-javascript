@@ -71,4 +71,13 @@ describe("encode", () => {
     const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteLength);
     assert.deepStrictEqual(decode(arrayBuffer), decode(buffer));
   });
+
+  context("map encoding", () => {
+    it("encodes Map(2) { 1: 'foo', '2': 'bar' } correctly", () => {
+      const origMap = new Map<number | string, string>();
+      origMap.set(1, 'foo');
+      origMap.set('2', 'bar');
+      assert.deepStrictEqual(decode(encode(origMap)), {'1': 'foo', '2': 'bar'});
+    });
+  });
 });

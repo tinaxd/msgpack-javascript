@@ -194,7 +194,11 @@ export class Encoder<ContextType = undefined> {
     } else if (ArrayBuffer.isView(object)) {
       this.encodeBinary(object);
     } else if (typeof object === "object") {
-      this.encodeMap(object as Record<string, unknown>, depth);
+      if (object instanceof Map) {
+        this.encodeHashMap(object as Map<number | string, unknown>, depth);
+      } else {
+        this.encodeMap(object as Record<string, unknown>, depth);
+      }
     } else {
       // symbol, function and other special object come here unless extensionCodec handles them.
       throw new Error(`Unrecognized object: ${Object.prototype.toString.apply(object)}`);
@@ -253,6 +257,35 @@ export class Encoder<ContextType = undefined> {
     }
 
     return count;
+  }
+
+  private encodeHashMap(object: Map<number | string, unknown>, depth: number) {
+    const keys = object.keys();
+
+    const size = object.size;
+
+    if (size < 16) {
+      // fixmap
+      this.writeU8(0x80 + size);
+    } else if (size < 0x10000) {
+      this.writeU8(0xde);
+      this.writeU16(size);
+    } else if (size < 0x100000000) {
+      this.writeU8(0xdf);
+      this.writeU32(size);
+    } else {
+      throw new Error(`Too large map object: ${size}`);
+    }
+  
+    for (const key of keys) {
+      const value = object.get(key);
+
+      if (!(this.ignoreUndefined && value == undefined)) {
+        if (typeof key == 'number') { this.encodeNumber(key); }
+        if (typeof key == 'string') { this.encodeString(key); }
+        this.doEncode(value, depth + 1);
+      }
+    }
   }
 
   private encodeMap(object: Record<string, unknown>, depth: number) {
