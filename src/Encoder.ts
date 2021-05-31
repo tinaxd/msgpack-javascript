@@ -260,8 +260,6 @@ export class Encoder<ContextType = undefined> {
   }
 
   private encodeHashMap(object: Map<number | string, unknown>, depth: number) {
-    const keys = object.keys();
-
     const size = object.size;
 
     if (size < 16) {
@@ -277,15 +275,13 @@ export class Encoder<ContextType = undefined> {
       throw new Error(`Too large map object: ${size}`);
     }
   
-    for (const key of keys) {
-      const value = object.get(key);
-
+    object.forEach((value, key) => {
       if (!(this.ignoreUndefined && value == undefined)) {
         if (typeof key == 'number') { this.encodeNumber(key); }
         if (typeof key == 'string') { this.encodeString(key); }
         this.doEncode(value, depth + 1);
       }
-    }
+    });
   }
 
   private encodeMap(object: Record<string, unknown>, depth: number) {
